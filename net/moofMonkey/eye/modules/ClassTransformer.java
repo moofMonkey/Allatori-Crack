@@ -122,9 +122,10 @@ public class ClassTransformer extends Thread implements ClassFileTransformer {
 			// Anti-comment of .jar file
 			// To search for find: setComment
 			// FIXME: HAND-MADE PATCH!!!
-			if (cl.getName().equals("com.allatori.iiIIIiiiii"))
+			if (cl.getName().equals("com.allatori.IiIIiiiIii"))
 				for (CtMethod md : cl.getDeclaredMethods())
-					if (md.getReturnType() == CtClass.voidType && md.getParameterTypes().length == 1)
+					if (md.getReturnType() == CtClass.voidType && md.getParameterTypes().length == 1
+							&& md.getParameterTypes()[0].getName().equalsIgnoreCase("java.util.jar.JarOutputStream"))
 						md.setBody("{ }");
 			/* End of patch */
 
@@ -143,7 +144,7 @@ public class ClassTransformer extends Thread implements ClassFileTransformer {
 						+ "s += \"#       # # ### ### # #  #  ### # # ###        #\\n\"; "
 						+ "s += \"#                                              #\\n\"; "
 						+ "s += \"#                                              #\\n\"; "
-						+ "s += \"#    Obfuscation by Allatori Obfuscator v5.7   #\\n\"; "
+						+ "s += \"#    Obfuscation by Allatori Obfuscator v5.8   #\\n\"; "
 						+ "s += \"#                                              #\\n\"; "
 						+ "s += \"#           http://www.allatori.com            #\\n\"; "
 						+ "s += \"#                                              #\\n\"; "
@@ -152,24 +153,24 @@ public class ClassTransformer extends Thread implements ClassFileTransformer {
 				CtMethod md = CtMethod.make("public static String " + patchLogoN + "() " + code, cl);
 
 				cl.addMethod(md);
-
+				
 				cl.getDeclaredMethod("main").instrument(new ExprEditor() {
 					@Override
 					public void edit(MethodCall mdc) {
 						try {
 							CtMethod md = mdc.getMethod();
-
+							
 							if (md.getName().equals(toSearch) && mdc.getSignature().equals("()Ljava/lang/String;"))
 								mdc.replace("{ $_ = " + patchLogoN + "(); }");
-
+						
 							super.edit(mdc);
 						} catch (Throwable t) {
 							t.printStackTrace();
 						}
 					}
 				});
-				/* End of patch */
 			}
+			/* End of patch */
 			ArrayList<CtMethod> mdl = Utils.get(cl.getDeclaredMethods(), toSearch, signature);
 
 			if (mdl == null) {
@@ -178,23 +179,28 @@ public class ClassTransformer extends Thread implements ClassFileTransformer {
 				return classfileBuffer;
 			}
 
-			// IIIIIIIIIi == arg0
+			String arg0 = "iiIIiiIIiI";
+			String retOnFail = arg0;
 			for (CtMethod md : mdl)
 				if (Utils.dump)
-					md.insertAfter("{ System.out.println(\"\\n" + cl.getName() + ":\\n" + "\" +  IIIIIIIIIi); }",
+					md.insertAfter("{ if(" + arg0 + " != null) if(" + arg0 + " instanceof String) { "
+							+ "System.out.println(\"\\n" + cl.getName() + ":\\n" + "\" +  " + arg0 + "); }",
 							false);
 				else {
 					// Replace logo
-					md.insertAfter("{ if(IIIIIIIIIi.indexOf(\"http://www.allatori.com\") > -1) {" + (Utils.debug
+					md.insertAfter("{ if(" + arg0 + " != null) if(" + arg0 + " instanceof String) { "
+							+ "if(" + arg0 + ".indexOf(\"http://www.allatori.com\") > -1) {" + (Utils.debug
 							? "System.out.println(\"Replaced allatori logo in " + cl.getName() + "\");" : "")
-							+ " return \"\"; } }", false);
+							+ " return \"\"; }"
+							+ "} else { return " + retOnFail + "; } }", false);
 					// Replace prefixes
-					md.insertAfter(
-							"{ if(IIIIIIIIIi.indexOf(\"ALLATORIxDEMO\") > -1) {"
+					md.insertAfter("{ if(" + arg0 + " != null) if(" + arg0 + " instanceof String) { "
+									+ "if(" + arg0 +  ".indexOf(\"ALLATORIxDEMO\") > -1) {"
 									+ (Utils.debug ? " System.out.println(\"Replaced allatori prefix in " + cl.getName()
 											+ "\");" : "")
-									+ " return IIIIIIIIIi.replaceAll(\"ALLATORIxDEMOx\", ClassNameGen.get(6))"
-									+ "   .replaceAll(\"ALLATORIxDEMO\", ClassNameGen.get(6)); } }",
+									+ " return " + arg0 + ".replaceAll(\"ALLATORIxDEMOx\", ClassNameGen.get(6))"
+									+ "   .replaceAll(\"ALLATORIxDEMO\", ClassNameGen.get(6)); }"
+									+ "} else { return " + retOnFail + "; } }",
 							false);
 				}
 
